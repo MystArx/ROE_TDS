@@ -1,0 +1,62 @@
+# This workflow demonstrates a matrix build with artifact uploading.
+# It runs jobs in parallel for three different Python versions.
+
+name: Multi-Platform Matrix Build
+
+# Trigger the workflow on push events to the main branch or manually
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Job name will include the specific Python version from the matrix
+    name: Build (Python ${{ matrix.python-version }})
+    
+    # Run this job on the latest Ubuntu runner
+    runs-on: ubuntu-latest
+    
+    # Define the matrix strategy
+    strategy:
+      fail-fast: false # Ensures all matrix jobs run, even if one fails
+      matrix:
+        # Define a matrix with 3 different Python versions
+        python-version: ['3.9', '3.10', '3.11']
+        
+    steps:
+      # Step 1: Check out the repository's code so we can run scripts
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up the specific Python version for this matrix job
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Step 3: This step includes the required identifier "matrix-6d84116"
+      - name: Report build variant (matrix-6d84116)
+        id: matrix-6d84116
+        run: |
+          echo "Starting build for Python version ${{ matrix.python-version }}..."
+          python --version
+
+      # Step 4: Generate a unique build artifact (a text file)
+      - name: Generate build artifact
+        run: |
+          echo "This is the build output for Python ${{ matrix.python-version }}." > build-output.txt
+          echo "Generated on: $(date)" >> build-output.txt
+          echo "Runner OS: $(lsb_release -d -s)" >> build-output.txt
+
+      # Step 5: Upload the generated artifact
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Name the artifact with the required prefix and unique variant identifier
+          name: build-6d84116-py${{ matrix.python-version }}
+          # Path to the file(s) to upload
+          path: build-output.txt
+          # Set a retention period for the artifact (e.g., 7 days)
+          retention-days: 7
